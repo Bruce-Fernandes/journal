@@ -37,12 +37,16 @@
 
 <main class="main">
   <header class="topbar">
-    <div>
-      <h2 id="viewTitle">Dashboard</h2>
-      <p class="muted" id="viewSub">Overview of your trading performance</p>
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menu"><span></span><span></span><span></span></button>
+      <div>
+        <h2 id="viewTitle">Dashboard</h2>
+        <p class="muted" id="viewSub">Overview of your trading performance</p>
+      </div>
     </div>
     <div class="topbar-actions">
       <span class="balance-pill" id="balancePill">Balance: —</span>
+      <button class="btn primary mobile-add-btn" id="mobileAddBtn">+ Add</button>
     </div>
   </header>
 
@@ -84,7 +88,7 @@
       <table class="trades-table">
         <thead><tr>
           <th>Date</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th>
-          <th>Qty</th><th>P&L</th><th>R</th><th>Session</th><th>Tags</th><th></th>
+          <th>Qty</th><th>P&L</th><th>R</th><th>Session</th><th>Leverage</th><th>Tags</th><th></th>
         </tr></thead>
         <tbody id="tradesBody"></tbody>
       </table>
@@ -178,12 +182,12 @@
         <label>Exit Time<input name="exit_time" id="f_exit_time" type="datetime-local" /></label>
         <label>Entry Price*<input name="entry_price" id="f_entry_price" type="number" step="any" required /></label>
         <label>Exit Price<input name="exit_price" id="f_exit_price" type="number" step="any" /></label>
-        <label>Quantity<input name="quantity" id="f_quantity" type="number" step="any" value="1" /></label>
+        <label>Quantity (Lots)<input name="quantity" id="f_quantity" type="number" step="any" value="1" /></label>
+        <label>Contract Size<input name="contract_size" id="f_contract_size" type="number" step="any" value="1" placeholder="1=stocks, 100=gold, 100000=forex" /></label>
         <label>Stop Loss<input name="stop_loss" id="f_stop_loss" type="number" step="any" /></label>
         <label>Take Profit<input name="take_profit" id="f_take_profit" type="number" step="any" /></label>
         <label>Fees<input name="fees" id="f_fees" type="number" step="any" value="0" /></label>
-        <label>Risk Amount ($)<input name="risk_amount" id="f_risk_amount" type="number" step="any" /></label>
-        <label>P&L (override)<input name="pnl" id="f_pnl" type="number" step="any" placeholder="auto" /></label>
+        <label>Risk Amount ($)<input name="risk_amount" id="f_risk_amount" type="number" step="any" /></label>        <label>Leverage (e.g. 10 for 10x)<input name="leverage" id="f_leverage" type="number" step="any" min="1" placeholder="1" /></label>        <label>P&L (override)<input name="pnl" id="f_pnl" type="number" step="any" placeholder="auto" /></label>
         <label>Strategy<input name="strategy" id="f_strategy" placeholder="ICT, SMC, Breakout..." /></label>
         <label>Setup<input name="setup" id="f_setup" placeholder="OB, FVG, Pullback..." /></label>
         <label>Emotion
@@ -205,6 +209,7 @@
   </div>
 </div>
 
+<div id="drawerOverlay" class="drawer-overlay hidden"></div>
 <div id="toast" class="toast hidden"></div>
 
 <!-- AUTH OVERLAY -->

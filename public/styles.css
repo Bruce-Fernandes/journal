@@ -174,16 +174,46 @@ input[type=number]::-webkit-outer-spin-button{
 .danger-ghost:hover{background:var(--red-soft)}
 
 /* ── Responsive ── */
+
+/* Hamburger — hidden on desktop */
+.hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;cursor:pointer;padding:6px;border-radius:8px}
+.hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.2s}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+.topbar-left{display:flex;align-items:center;gap:10px}
+.mobile-add-btn{display:none}
+
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:38;backdrop-filter:blur(2px)}
+
 @media(max-width:900px){
   body{grid-template-columns:1fr}
-  .sidebar{position:fixed;bottom:0;top:auto;left:0;right:0;height:auto;width:100%;flex-direction:row;align-items:center;padding:8px 12px;gap:0;border-right:none;border-top:1px solid var(--border);z-index:40;overflow-x:auto}
-  .brand{display:none}
-  nav{flex-direction:row;gap:0;margin-top:0;flex:1;justify-content:space-around}
-  .nav-item{flex-direction:column;gap:3px;padding:6px 10px;font-size:10px;border-radius:8px}
-  .nav-item span{font-size:18px}
-  .side-actions{margin-top:0;margin-left:8px}
-  .side-actions .btn{padding:8px 12px;font-size:12px;white-space:nowrap}
-  .main{padding:16px 14px 90px}
+
+  /* Slide-out drawer */
+  .sidebar{
+    position:fixed;left:-270px;top:0;height:100vh;width:260px;
+    z-index:39;transition:left .25s cubic-bezier(.4,0,.2,1);
+    overflow-y:auto;box-shadow:none;border-right:1px solid var(--border);
+    padding:20px 14px;
+  }
+  .sidebar.open{left:0;box-shadow:6px 0 40px rgba(0,0,0,.5)}
+
+  /* Show hamburger & mobile add button */
+  .hamburger{display:flex}
+  .mobile-add-btn{display:inline-flex;padding:8px 12px;font-size:12px}
+
+  /* Topbar */
+  .topbar{margin-bottom:14px}
+  .topbar h2{font-size:18px}
+  .topbar .muted{font-size:11px;margin-top:2px}
+  .topbar-actions{display:flex;align-items:center;gap:8px}
+  .balance-pill{padding:6px 10px;font-size:12px}
+
+  /* Main content — no bottom padding needed */
+  .main{padding:14px 12px 30px}
+
+  /* Layout */
   .kpis{grid-template-columns:repeat(2,1fr)}
   .grid-2,.grid-3{grid-template-columns:1fr}
   .chart-wrap{height:180px}
@@ -193,10 +223,16 @@ input[type=number]::-webkit-outer-spin-button{
   .modal-content{padding:16px}
   .cal-cell{min-height:54px;padding:5px}
   .cal-cell .pnl{font-size:11px}
+
+  /* Toolbar wrapping */
+  .toolbar{flex-wrap:wrap}
+  .toolbar input,.toolbar select{flex:1 1 120px;min-width:0}
 }
+
 @media(max-width:480px){
   .kpis{grid-template-columns:1fr 1fr}
   .kpi .v{font-size:18px}
-  .topbar h2{font-size:18px}
+  .topbar h2{font-size:16px}
   .cal-nav span{min-width:100px;font-size:12px}
+  .balance-pill{display:none}
 }

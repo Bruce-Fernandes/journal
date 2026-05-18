@@ -17,8 +17,28 @@ function toast(msg, type='success'){
   t.classList.remove('hidden');
 }
 
+// ---------- Mobile drawer ----------
+const sidebar = document.querySelector('.sidebar');
+const hamburger = $('#hamburgerBtn');
+const overlay = $('#drawerOverlay');
+
+function openDrawer() {
+  sidebar.classList.add('open');
+  hamburger.classList.add('open');
+  overlay.classList.remove('hidden');
+}
+function closeDrawer() {
+  sidebar.classList.remove('open');
+  hamburger.classList.remove('open');
+  overlay.classList.add('hidden');
+}
+hamburger.addEventListener('click', () => sidebar.classList.contains('open') ? closeDrawer() : openDrawer());
+overlay.addEventListener('click', closeDrawer);
+$('#mobileAddBtn').addEventListener('click', () => openModal());
+
 // ---------- Navigation ----------
 $$('.nav-item').forEach(a => a.addEventListener('click', () => {
+  closeDrawer();
   $$('.nav-item').forEach(n=>n.classList.remove('active'));
   a.classList.add('active');
   const v = a.dataset.view;
@@ -180,8 +200,9 @@ function renderTrades() {
       <td>${t.exit_price ?? '—'}</td>
       <td>${t.quantity}</td>
       <td class="${pnlCls}"><b>${fmt(t.pnl)}</b></td>
-      <td>${num(t.rr)}</td>
+      <td title="contract size: ${t.contract_size||1}">${num(t.rr)}</td>
       <td>${session}</td>
+      <td>${t.leverage ? t.leverage + 'x' : '—'}</td>
       <td>${tags||'<span class="muted">—</span>'}</td>
       <td>
         <button class="icon-btn edit-btn">✎</button>
@@ -239,10 +260,12 @@ function openModal(trade=null) {
     set('#f_entry_price', trade.entry_price);
     set('#f_exit_price', trade.exit_price);
     set('#f_quantity', trade.quantity);
+    set('#f_contract_size', trade.contract_size ?? 1);
     set('#f_stop_loss', trade.stop_loss);
     set('#f_take_profit', trade.take_profit);
     set('#f_fees', trade.fees);
     set('#f_risk_amount', trade.risk_amount);
+    set('#f_leverage', trade.leverage);
     set('#f_pnl', trade.pnl);
     set('#f_strategy', trade.strategy);
     set('#f_setup', trade.setup);
