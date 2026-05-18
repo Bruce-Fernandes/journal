@@ -65,6 +65,8 @@ CREATE INDEX IF NOT EXISTS idx_trades_entry ON trades(entry_time);
 // migrate: add user_id column to trades if missing (existing single-user data)
 try { db.exec('ALTER TABLE trades ADD COLUMN user_id INTEGER'); } catch(_) {}
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_trades_user ON trades(user_id)'); } catch(_) {}
+try { db.exec('ALTER TABLE trades ADD COLUMN leverage REAL'); } catch(_) {}
+try { db.exec('ALTER TABLE trades ADD COLUMN contract_size REAL'); } catch(_) {}
 
 // legacy single-user settings (kept for migration path, unused in auth mode)
 const getSetting = (k, def) => {
@@ -95,17 +97,19 @@ function computePnl(t) {
   if (t.pnl != null && t.pnl !== '') return Number(t.pnl);
   if (t.exit_price == null || t.entry_price == null) return null;
   const dir = t.direction === 'short' ? -1 : 1;
-  const gross = (Number(t.exit_price) - Number(t.entry_price)) * Number(t.quantity || 1) * dir;
+  const cs = Number(t.contract_size || 1);
+  const gross = (Number(t.exit_price) - Number(t.entry_price)) * Number(t.quantity || 1) * cs * dir;
   return gross - Number(t.fees || 0);
 }
 function computeR(t, pnl) {
   if (t.rr != null && t.rr !== '') return Number(t.rr);
   if (t.risk_amount && Number(t.risk_amount) > 0 && pnl != null) return pnl / Number(t.risk_amount);
   if (t.stop_loss && t.entry_price && t.exit_price) {
-    const risk = Math.abs(Number(t.entry_price) - Number(t.stop_loss)) * Number(t.quantity || 1);
+    const cs = Number(t.contract_size || 1);
+    const risk = Math.abs(Number(t.entry_price) - Number(t.stop_loss)) * Number(t.quantity || 1) * cs;
     if (risk > 0) {
       const dir = t.direction === 'short' ? -1 : 1;
-      const reward = (Number(t.exit_price) - Number(t.entry_price)) * Number(t.quantity || 1) * dir;
+      const reward = (Number(t.exit_price) - Number(t.entry_price)) * Number(t.quantity || 1) * cs * dir;
       return reward / risk;
     }
   }
@@ -258,6 +262,8 @@ app.post('/api/trades', requireAuth, upload.single('screenshot'), (req, res) => 
     notes: b.notes || null,
     screenshot: req.file ? '/uploads/' + req.file.filename : (b.screenshot || null),
     status: b.exit_price ? 'closed' : (b.status || 'open'),
+    leverage: b.leverage ? Number(b.leverage) : null,
+    contract_size: b.contract_size ? Number(b.contract_size) : 1,
     user_id: req.session.userId,
   };
   const pnl = computePnl(t);
@@ -265,8 +271,8 @@ app.post('/api/trades', requireAuth, upload.single('screenshot'), (req, res) => 
   t.pnl = pnl;
   t.rr = rr;
   const stmt = db.prepare(`INSERT INTO trades
-    (symbol,direction,entry_time,exit_time,entry_price,exit_price,quantity,stop_loss,take_profit,fees,pnl,rr,risk_amount,strategy,setup,tags,emotion,mistakes,notes,screenshot,status,user_id)
-    VALUES (@symbol,@direction,@entry_time,@exit_time,@entry_price,@exit_price,@quantity,@stop_loss,@take_profit,@fees,@pnl,@rr,@risk_amount,@strategy,@setup,@tags,@emotion,@mistakes,@notes,@screenshot,@status,@user_id)`);
+    (symbol,direction,entry_time,exit_time,entry_price,exit_price,quantity,stop_loss,take_profit,fees,pnl,rr,risk_amount,strategy,setup,tags,emotion,mistakes,notes,screenshot,status,leverage,contract_size,user_id)
+    VALUES (@symbol,@direction,@entry_time,@exit_time,@entry_price,@exit_price,@quantity,@stop_loss,@take_profit,@fees,@pnl,@rr,@risk_amount,@strategy,@setup,@tags,@emotion,@mistakes,@notes,@screenshot,@status,@leverage,@contract_size,@user_id)`);
   const r = stmt.run(t);
   res.json({ id: r.lastInsertRowid });
 });
@@ -289,7 +295,7 @@ app.put('/api/trades/:id', requireAuth, upload.single('screenshot'), (req, res) 
     entry_price=@entry_price,exit_price=@exit_price,quantity=@quantity,stop_loss=@stop_loss,
     take_profit=@take_profit,fees=@fees,pnl=@pnl,rr=@rr,risk_amount=@risk_amount,
     strategy=@strategy,setup=@setup,tags=@tags,emotion=@emotion,mistakes=@mistakes,
-    notes=@notes,screenshot=@screenshot,status=@status WHERE id=@id`).run({ ...b, id });
+    notes=@notes,screenshot=@screenshot,status=@status,leverage=@leverage,contract_size=@contract_size WHERE id=@id`).run({ ...b, id });
   res.json({ ok: true });
 });
 
