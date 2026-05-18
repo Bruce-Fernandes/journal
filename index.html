@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Trading Journal — Pro</title>
+<link rel="stylesheet" href="/styles.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="brand">
+    <div class="logo">TJ</div>
+    <div class="brand-text">
+      <h1>Trading Journal</h1>
+      <small>Pro Analytics</small>
+    </div>
+  </div>
+  <nav>
+    <a class="nav-item active" data-view="dashboard"><span>📊</span> Dashboard</a>
+    <a class="nav-item" data-view="trades"><span>📒</span> Trades</a>
+    <a class="nav-item" data-view="analytics"><span>📈</span> Analytics</a>
+    <a class="nav-item" data-view="calendar"><span>🗓️</span> Calendar</a>
+    <a class="nav-item" data-view="calculator"><span>🧮</span> Compound Calc</a>
+    <a class="nav-item" data-view="settings"><span>⚙️</span> Settings</a>
+  </nav>
+  <div class="side-actions">
+    <button class="btn primary" id="addTradeBtn">+ Add Trade</button>
+    <div class="user-info" id="userInfo"><span class="user-avatar" id="userAvatar"></span><span id="userLabel"></span></div>
+    <button class="btn ghost danger-ghost" id="logoutBtn">⎋ Logout</button>
+  </div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div>
+      <h2 id="viewTitle">Dashboard</h2>
+      <p class="muted" id="viewSub">Overview of your trading performance</p>
+    </div>
+    <div class="topbar-actions">
+      <span class="balance-pill" id="balancePill">Balance: —</span>
+    </div>
+  </header>
+
+  <!-- DASHBOARD -->
+  <section class="view" id="view-dashboard">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><h3>Equity Curve</h3></div>
+        <div class="chart-wrap"><canvas id="equityChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Daily P&L</h3></div>
+        <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="card"><div class="card-head"><h3>By Session</h3></div><div class="chart-wrap chart-wrap-sm"><canvas id="sessionChart"></canvas></div></div>
+      <div class="card"><div class="card-head"><h3>By Day of Week</h3></div><div class="chart-wrap chart-wrap-sm"><canvas id="dowChart"></canvas></div></div>
+      <div class="card"><div class="card-head"><h3>By Hour (UTC)</h3></div><div class="chart-wrap chart-wrap-sm"><canvas id="hourChart"></canvas></div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-head"><h3>Top Symbols</h3></div><div id="symbolList" class="list"></div></div>
+      <div class="card"><div class="card-head"><h3>Top Tags / Setups</h3></div><div id="tagList" class="list"></div></div>
+    </div>
+  </section>
+
+  <!-- TRADES -->
+  <section class="view hidden" id="view-trades">
+    <div class="toolbar">
+      <input id="searchInput" placeholder="Search symbol, tag, notes..." />
+      <select id="filterDir"><option value="">All directions</option><option value="long">Long</option><option value="short">Short</option></select>
+      <select id="filterResult"><option value="">All results</option><option value="win">Wins</option><option value="loss">Losses</option></select>
+      <div class="spacer"></div>
+      <a class="btn ghost" href="/api/export.csv">⬇ Export CSV</a>
+      <label class="btn ghost">⬆ Import CSV<input type="file" id="importCsv" accept=".csv" hidden /></label>
+    </div>
+    <div class="card no-pad">
+      <table class="trades-table">
+        <thead><tr>
+          <th>Date</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th>
+          <th>Qty</th><th>P&L</th><th>R</th><th>Session</th><th>Tags</th><th></th>
+        </tr></thead>
+        <tbody id="tradesBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ANALYTICS -->
+  <section class="view hidden" id="view-analytics">
+    <div class="grid-2">
+      <div class="card"><div class="card-head"><h3>Drawdown Curve</h3></div><div class="chart-wrap"><canvas id="ddChart"></canvas></div></div>
+      <div class="card"><div class="card-head"><h3>R Multiple Distribution</h3></div><div class="chart-wrap"><canvas id="rChart"></canvas></div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-head"><h3>Strategy Performance</h3></div><div id="stratList" class="list"></div></div>
+      <div class="card"><div class="card-head"><h3>Win Rate vs Avg R per Session</h3></div><div class="chart-wrap"><canvas id="sessionMixChart"></canvas></div></div>
+    </div>
+  </section>
+
+  <!-- CALENDAR -->
+  <section class="view hidden" id="view-calendar">
+    <div class="card">
+      <div class="card-head">
+        <h3>Trading Calendar</h3>
+        <div class="cal-nav">
+          <button id="calPrev" class="btn ghost">‹</button>
+          <span id="calLabel"></span>
+          <button id="calNext" class="btn ghost">›</button>
+        </div>
+      </div>
+      <div id="calendar" class="calendar"></div>
+    </div>
+  </section>
+
+  <!-- CALCULATOR -->
+  <section class="view hidden" id="view-calculator">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><h3>Compound Projection</h3></div>
+        <div class="form-grid">
+          <label>Starting Balance ($)<input id="ccStart" type="number" value="10000" /></label>
+          <label>Win Rate (%)<input id="ccWinRate" type="number" value="55" /></label>
+          <label>Avg Win (R)<input id="ccAvgWin" type="number" step="0.1" value="1.5" /></label>
+          <label>Avg Loss (R)<input id="ccAvgLoss" type="number" step="0.1" value="1" /></label>
+          <label>Risk per Trade (%)<input id="ccRisk" type="number" step="0.1" value="1" /></label>
+          <label>Trades / Day<input id="ccTradesDay" type="number" value="2" /></label>
+          <label>Trading Days / Month<input id="ccDaysMonth" type="number" value="20" /></label>
+          <label>Months<input id="ccMonths" type="number" value="12" /></label>
+        </div>
+        <button class="btn primary" id="ccRun">Run Projection</button>
+        <button class="btn ghost" id="ccUseMine">Use my real stats</button>
+        <div id="ccResult" class="cc-result"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Equity Projection</h3></div>
+        <div class="chart-wrap"><canvas id="ccChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view hidden" id="view-settings">
+    <div class="card">
+      <div class="card-head"><h3>Account Settings</h3></div>
+      <div class="form-grid">
+        <label>Starting Balance ($)<input id="setStart" type="number" /></label>
+        <label>Currency<input id="setCcy" type="text" /></label>
+        <label>Daily Loss Limit (%)<input id="setDaily" type="number" step="0.1" /></label>
+        <label>Max Loss Limit (%)<input id="setMax" type="number" step="0.1" /></label>
+        <label>Profit Target (%)<input id="setTarget" type="number" step="0.1" /></label>
+      </div>
+      <button class="btn primary" id="saveSettings">Save Settings</button>
+    </div>
+  </section>
+</main>
+
+<!-- TRADE MODAL -->
+<div class="modal hidden" id="tradeModal">
+  <div class="modal-content">
+    <div class="modal-head">
+      <h3 id="modalTitle">Add Trade</h3>
+      <button class="icon-btn" id="modalClose">✕</button>
+    </div>
+    <form id="tradeForm" enctype="multipart/form-data">
+      <input type="hidden" name="id" id="f_id" />
+      <div class="form-grid">
+        <label>Symbol*<input name="symbol" id="f_symbol" required placeholder="EURUSD, NQ, AAPL..." /></label>
+        <label>Direction*
+          <select name="direction" id="f_direction"><option value="long">Long</option><option value="short">Short</option></select>
+        </label>
+        <label>Entry Time*<input name="entry_time" id="f_entry_time" type="datetime-local" required /></label>
+        <label>Exit Time<input name="exit_time" id="f_exit_time" type="datetime-local" /></label>
+        <label>Entry Price*<input name="entry_price" id="f_entry_price" type="number" step="any" required /></label>
+        <label>Exit Price<input name="exit_price" id="f_exit_price" type="number" step="any" /></label>
+        <label>Quantity<input name="quantity" id="f_quantity" type="number" step="any" value="1" /></label>
+        <label>Stop Loss<input name="stop_loss" id="f_stop_loss" type="number" step="any" /></label>
+        <label>Take Profit<input name="take_profit" id="f_take_profit" type="number" step="any" /></label>
+        <label>Fees<input name="fees" id="f_fees" type="number" step="any" value="0" /></label>
+        <label>Risk Amount ($)<input name="risk_amount" id="f_risk_amount" type="number" step="any" /></label>
+        <label>P&L (override)<input name="pnl" id="f_pnl" type="number" step="any" placeholder="auto" /></label>
+        <label>Strategy<input name="strategy" id="f_strategy" placeholder="ICT, SMC, Breakout..." /></label>
+        <label>Setup<input name="setup" id="f_setup" placeholder="OB, FVG, Pullback..." /></label>
+        <label>Emotion
+          <select name="emotion" id="f_emotion">
+            <option value="">—</option><option>Calm</option><option>Confident</option>
+            <option>FOMO</option><option>Fearful</option><option>Greedy</option><option>Revenge</option>
+          </select>
+        </label>
+        <label>Tags (comma)<input name="tags" id="f_tags" placeholder="A+, swing, news" /></label>
+        <label class="full">Mistakes<textarea name="mistakes" id="f_mistakes" rows="2"></textarea></label>
+        <label class="full">Notes<textarea name="notes" id="f_notes" rows="3"></textarea></label>
+        <label class="full">Screenshot<input name="screenshot" id="f_screenshot" type="file" accept="image/*" /></label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn primary">Save Trade</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<!-- AUTH OVERLAY -->
+<div id="authOverlay" class="auth-overlay hidden">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="logo">TJ</div>
+      <h1>Trading Journal</h1>
+      <p class="muted">Track, analyze and improve your trading</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">Login</button>
+      <button class="auth-tab" data-tab="register">Register</button>
+    </div>
+    <!-- Login form -->
+    <form id="loginForm" class="auth-form">
+      <label>Username<input type="text" id="loginUsername" autocomplete="username" required /></label>
+      <label>Password<input type="password" id="loginPassword" autocomplete="current-password" required /></label>
+      <div id="loginError" class="auth-error hidden"></div>
+      <button type="submit" class="btn primary full-w">Login</button>
+    </form>
+    <!-- Register form -->
+    <form id="registerForm" class="auth-form hidden">
+      <label>Username<input type="text" id="regUsername" autocomplete="username" required /></label>
+      <label>Email (optional)<input type="email" id="regEmail" autocomplete="email" /></label>
+      <label>Password (min 6 chars)<input type="password" id="regPassword" autocomplete="new-password" required /></label>
+      <div id="registerError" class="auth-error hidden"></div>
+      <button type="submit" class="btn primary full-w">Create Account</button>
+    </form>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
